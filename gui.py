@@ -6,7 +6,7 @@ import sys
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
 
-from PyQt6.QtCore import QItemSelectionModel, QThread, QUrl, Qt, pyqtSignal
+from PyQt6.QtCore import QItemSelectionModel, QThread, QUrl, Qt, pyqtSignal, QSettings
 from PyQt6.QtGui import QColor, QDesktopServices, QFont, QMouseEvent, QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
@@ -140,7 +140,13 @@ class WxCleanerApp(QMainWindow):
         self.rows_by_path_exact: Dict[str, List[int]] = defaultdict(list)
         self.rows_by_path_near: Dict[str, List[int]] = defaultdict(list)
 
+        self.settings = QSettings("WeChatCleaner", "WxCleaner")
+        
         self.setup_ui()
+        
+        last_path = self.settings.value("last_scan_path", "")
+        if last_path:
+            self.path_entry.setText(str(last_path))
 
     def setup_ui(self):
         central = QWidget()
@@ -153,6 +159,7 @@ class WxCleanerApp(QMainWindow):
         top.addWidget(QLabel("微信文件路径:"))
         self.path_entry = QLineEdit()
         self.path_entry.setPlaceholderText("请选择或输入目录...")
+            
         top.addWidget(self.path_entry)
 
         btn_browse = QPushButton("浏览")
@@ -258,6 +265,7 @@ class WxCleanerApp(QMainWindow):
         path = QFileDialog.getExistingDirectory(self, "选择微信存储路径")
         if path:
             self.path_entry.setText(path)
+            self.settings.setValue("last_scan_path", path)
 
     def build_options(self) -> ScanOptions:
         io_conc = int(self.cmb_io.currentText())
@@ -276,6 +284,8 @@ class WxCleanerApp(QMainWindow):
         if not path or not os.path.exists(path):
             QMessageBox.warning(self, "错误", "请选择有效的路径！")
             return
+            
+        self.settings.setValue("last_scan_path", path)
 
         self.clear_results()
         self.btn_scan.setEnabled(False)
